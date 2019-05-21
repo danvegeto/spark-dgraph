@@ -5,8 +5,8 @@ import io.dgraph.DgraphGrpc
 import io.grpc.ManagedChannelBuilder
 import io.dgraph.DgraphProto.Mutation
 import java.util.Collections
-
 import org.apache.log4j.{Level, Logger}
+import org.apache.spark.graphx.{Edge, Graph}
 import org.apache.spark.sql.SparkSession
 
 import scala.collection.JavaConverters._
@@ -40,24 +40,37 @@ object SparkDGraph
     val op = Operation.newBuilder.setSchema(schema).build
     dgraphClient.alter(op)
 
-
     // test data
     val people = Seq(
-      new Person("1", "Jain", "Manish", "DGraph Labs", "Founder", "San Francisco"),
-      new Person("2", "Rivera", "Martin", "DGraph Labs", "Software Engineer", "San Francisco"),
-      new Person("3", "Wang", "Lucas", "DGraph Labs", "Software Engineer", "San Francisco"),
-      new Person("4", "Mai", "Daniel", "DGraph Labs", "DevOps Engineer", "San Francisco"),
-      new Person("5", "Rivera", "Martin", "DGraph Labs", "Software Engineer", "San Francisco"),
-      new Person("6", "Alvarado", "Javier", "DGraph Labs", "Senior Software Engineer", "San Francisco"),
-      new Person("7", "Mangal", "Aman", "DGraph Labs", "Distributed Systems Engineer", "Bengaluru"),
-      new Person("8", "Rao", "Karthic", "DGraph Labs", "Developer Advocate", "Bengaluru"),
-      new Person("9", "Jarif", "Ibrahim", "DGraph Labs", "Software Engineer", "Bengaluru"),
-      new Person("10", "Goswami", "Ashish", "DGraph Labs", "Distributed Systems Engineer", "Mathura"),
-      new Person("11", "Conrado", "Michel", "DGraph Labs", "Software Engineer", "Salvador"),
-      new Person("12", "Cameron", "James", "DGraph Labs", "Investor", "Sydney"),
+      new Person("0", "Manish", "Jain", "DGraph Labs", "Founder", "San Francisco"),
+      new Person("1", "Martin", "Rivera", "DGraph Labs", "Software Engineer", "San Francisco"),
+      new Person("2", "Lucas", "Wang", "DGraph Labs", "Software Engineer", "San Francisco"),
+      new Person("3", "Daniel", "Mai", "DGraph Labs", "DevOps Engineer", "San Francisco"),
+      new Person("4", "Javier", "Alvarado", "DGraph Labs", "Senior Software Engineer", "San Francisco"),
+      new Person("5", "Aman", "Mangal", "DGraph Labs", "Distributed Systems Engineer", "Bengaluru"),
+      new Person("6", "Karthic", "Rao", "DGraph Labs", "Developer Advocate", "Bengaluru"),
+      new Person("7", "Ibrahim", "Jarif", "DGraph Labs", "Software Engineer", "Bengaluru"),
+      new Person("8", "Ashish", "Goswami", "DGraph Labs", "Distributed Systems Engineer", "Mathura"),
+      new Person("9", "Michel", "Conrado", "DGraph Labs", "Software Engineer", "Salvador"),
+      new Person("10", "James", "Cameron", "DGraph Labs", "Investor", "Sydney"),
     )
 
+
+    people(0).friends.add(people(1))
+    people(0).friends.add(people(2))
+    people(0).friends.add(people(3))
+    people(0).friends.add(people(4))
     people(1).friends.add(people(2))
+    people(1).friends.add(people(3))
+    people(1).friends.add(people(4))
+    people(2).friends.add(people(3))
+    people(2).friends.add(people(4))
+
+    people(6).friends.add(people(7))
+    people(6).friends.add(people(8))
+    people(7).friends.add(people(8))
+
+    people(9).friends.add(people(10))
 
     // serialize with Gson
     val gson = new Gson
@@ -85,7 +98,7 @@ object SparkDGraph
         "    company\n" +
         "    title\n" +
         "    city\n" +
-        "    friend {\n" +
+        "    friends {\n" +
         "      uid\n" +
         "      lastName\n" +
         "      firstName\n" +
@@ -103,21 +116,29 @@ object SparkDGraph
     println(res.getJson.toStringUtf8)
 
     // deserialize with Gson
-    val ppl = gson.fromJson(res.getJson.toStringUtf8, classOf[PersonDataset])
+    val response = gson.fromJson(res.getJson.toStringUtf8, classOf[PersonResponse])
 
     // create Spark session
     val spark = SparkSession.builder().master("local").getOrCreate()
 
-    // convert results list to Spark Dataset
-    import spark.implicits._
+    def uid(p: Person): Long = {java.lang.Long.parseLong(p.uid.substring(2), 16)}
 
-    val data = ppl.all.asScala.map(p => ScalaPerson(p.uid, p.firstName, p.lastName, p.company, p.title, p.city)).toDS()
+    val vertices = spark.sparkContext.parallelize(
+      response.all.asScala.map(p => (uid(p), p)).toList
+    )
 
-    // explore data with Spark Dataset operations
-    data.show()
-    data.groupBy('city).count().sort('count.desc).show()
-    data.groupBy('title).count().sort('count.desc).show()
-    data.groupBy('city, 'title).count().sort('count.desc).show()
+    val edges = spark.sparkContext.parallelize(
+      response.all.asScala.filter(_.friends != null).flatMap(p1 => p1.friends.asScala.map(p2 =>
+        new Edge(uid(p1), uid(p2), "Friend")))
+    )
+
+    val graph = Graph(vertices, edges)
+    graph.vertices.foreach(println)
+    graph.edges.foreach(println)
+
+    graph.ops.connectedComponents().vertices.join(graph.vertices).groupBy(_._2._1)
+      .sortBy(_._2.toList.length, ascending = false)
+      .map(c => "Group of " + c._2.toList.length + ": " + c._2.map(p => p._2._2.firstName + " " + p._2._2.lastName).mkString(", ")).foreach(println)
   }
 }
 

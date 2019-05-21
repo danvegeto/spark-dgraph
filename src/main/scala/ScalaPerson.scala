@@ -1,1 +1,0 @@
-case class ScalaPerson(uid: String, firstName: String, lastName: String, company: String, title: String, city: String)

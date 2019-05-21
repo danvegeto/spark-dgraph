@@ -1,7 +1,8 @@
-import java.util.LinkedList;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Person {
+public class Person implements Serializable {
 
     public Person(String uid, String firstName, String lastName, String company, String title, String city) {
         this.uid = uid;
@@ -11,7 +12,7 @@ public class Person {
         this.title = title;
         this.city = city;
 
-        friends = new LinkedList<>();
+        friends = new ArrayList<>();
     }
 
     String uid;

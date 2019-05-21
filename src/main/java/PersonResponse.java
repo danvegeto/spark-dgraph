@@ -1,5 +1,5 @@
 import java.util.List;
 
-public class PersonDataset {
+public class PersonResponse {
     List<Person> all;
 }
