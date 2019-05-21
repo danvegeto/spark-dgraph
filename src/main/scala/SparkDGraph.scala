@@ -5,6 +5,7 @@ import io.dgraph.DgraphGrpc
 import io.grpc.ManagedChannelBuilder
 import io.dgraph.DgraphProto.Mutation
 import java.util.Collections
+
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.graphx.{Edge, Graph}
 import org.apache.spark.sql.SparkSession
@@ -109,8 +110,11 @@ object SparkDGraph
         "  }\n" +
         "}\n"
 
-    // create query transaction
+
     val vars = Collections.singletonMap("$a", "DGraph Labs")
+
+    /*
+    // create query transaction
     val res = dgraphClient.newReadOnlyTransaction.queryWithVars(query, vars)
 
     println(res.getJson.toStringUtf8)
@@ -135,6 +139,16 @@ object SparkDGraph
     val graph = Graph(vertices, edges)
     graph.vertices.foreach(println)
     graph.edges.foreach(println)
+
+     */
+
+    // create Spark session
+    val spark = SparkSession.builder().master("local").getOrCreate()
+
+    // create graph loader for Person
+    val loader = new DGraphLoader[Person](dgraphClient, spark)
+
+    val graph = loader.loadGraph[Person](query, vars, "friend")
 
     graph.ops.connectedComponents().vertices.join(graph.vertices).groupBy(_._2._1)
       .sortBy(_._2.toList.length, ascending = false)
