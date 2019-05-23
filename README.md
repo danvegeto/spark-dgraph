@@ -27,73 +27,24 @@ sudo docker exec -it dgraph dgraph alpha --lru_mb 2048 --zero localhost:5080
 sbt run
 ```
 
-## Examples
+## Example
 
-After a query has been loaded into `data`, a Spark Dataset of DGraph's employees, it can be explored with Spark's API.
+After a query has been loaded into `graph`, it can be explored with Spark's GraphX API
 
-`data.show()`
-
-```
-+--------+---------+-----------+--------------------+-------------+
-|lastName|firstName|    company|               title|         city|
-+--------+---------+-----------+--------------------+-------------+
-|    Jain|   Manish|DGraph Labs|             Founder|San Francisco|
-|  Rivera|   Martin|DGraph Labs|   Software Engineer|San Francisco|
-|    Wang|    Lucas|DGraph Labs|   Software Engineer|San Francisco|
-|     Mai|   Daniel|DGraph Labs|     DevOps Engineer|San Francisco|
-|  Rivera|   Martin|DGraph Labs|   Software Engineer|San Francisco|
-|Alvarado|   Javier|DGraph Labs|Senior Software E...|San Francisco|
-|  Mangal|     Aman|DGraph Labs|Distributed Syste...|    Bengaluru|
-|     Rao|  Karthic|DGraph Labs|  Developer Advocate|    Bengaluru|
-|   Jarif|  Ibrahim|DGraph Labs|   Software Engineer|    Bengaluru|
-| Goswami|   Ashish|DGraph Labs|Distributed Syste...|      Mathura|
-| Conrado|   Michel|DGraph Labs|   Software Engineer|     Salvador|
-| Cameron|    James|DGraph Labs|            Investor|       Sydney|
-+--------+---------+-----------+--------------------+-------------+
+```Scala
+    // example of a graph operation - print out the connected components
+    graph.ops.connectedComponents().vertices
+      .join(graph.vertices) // join on uid
+      .groupBy(_._2._1) // group by root vertex of each component
+      .sortBy(_._2.toList.length, ascending = false) // sort by component size
+      // generate string "Group of <size>: <p1>, <p2>, ... <pn>"
+      .map(c => "Group of " + c._2.toList.length + ": " +
+        c._2.map(p => p._2._2.firstName + " " + p._2._2.lastName).mkString(", "))
+      .foreach(println)
 ```
 
-`data.groupBy('city).count().sort('count.desc).show()`
 ```
-+-------------+-----+
-|         city|count|
-+-------------+-----+
-|San Francisco|    6|
-|    Bengaluru|    3|
-|       Sydney|    1|
-|      Mathura|    1|
-|     Salvador|    1|
-+-------------+-----+
-```
-
-`data.groupBy('title).count().sort('count.desc).show()`
-```
-+--------------------+-----+
-|               title|count|
-+--------------------+-----+
-|   Software Engineer|    5|
-|Distributed Syste...|    2|
-|  Developer Advocate|    1|
-|             Founder|    1|
-|     DevOps Engineer|    1|
-|Senior Software E...|    1|
-|            Investor|    1|
-+--------------------+-----+
-```
-
-`data.groupBy('city, 'title).count().sort('count.desc).show()`
-```
-+-------------+--------------------+-----+
-|         city|               title|count|
-+-------------+--------------------+-----+
-|San Francisco|   Software Engineer|    3|
-|       Sydney|            Investor|    1|
-|San Francisco|     DevOps Engineer|    1|
-|San Francisco|Senior Software E...|    1|
-|San Francisco|             Founder|    1|
-|      Mathura|Distributed Syste...|    1|
-|    Bengaluru|  Developer Advocate|    1|
-|    Bengaluru|Distributed Syste...|    1|
-|    Bengaluru|   Software Engineer|    1|
-|     Salvador|   Software Engineer|    1|
-+-------------+--------------------+-----+
+Group of 6: Lucas Wang, Javier Alvarado, Martin Rivera, Daniel Mai, Manish Jain, Aman Mangal
+Group of 3: Karthic Rao, Ibrahim Jarif, Ashish Goswami
+Group of 2: Michel Conrado, James Cameron
 ```

@@ -1,5 +1,6 @@
 import java.util.List;
 
-public class DGraphQuery<T extends DGraphVertex> {
-    List<T> all;
+public interface DGraphQuery<T> {
+
+    List<T> getAll();
 }

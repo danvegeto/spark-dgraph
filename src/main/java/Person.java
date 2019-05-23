@@ -1,7 +1,8 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Person implements DGraphVertex {
+public class Person implements DGraphVertex, Serializable {
 
     public Person(String uid, String firstName, String lastName, String company, String title, String city) {
         this.uid = uid;
@@ -20,7 +21,7 @@ public class Person implements DGraphVertex {
     String company;
     String title;
     String city;
-    List<Person> friends;
+    List<Person> friends; // corresponds to 'friends' edge in DGraph schema
 
     @Override
     public String getUid() {
@@ -29,7 +30,7 @@ public class Person implements DGraphVertex {
 
     @Override
     public List<Person> getEdges(String edgeType) {
-        if(edgeType.equals("friend"))
+        if(edgeType.equals("friends"))
             return friends;
         else
             return null;

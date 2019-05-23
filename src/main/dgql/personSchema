@@ -1,0 +1,7 @@
+uid: string @index(exact) .
+lastName: string @index(exact) .
+firstName: string @index(exact) .
+company: string @index(exact) .
+title: string @index(exact) .
+city: string @index(exact) .
+friends: uid @count .

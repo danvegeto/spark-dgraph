@@ -1,0 +1,18 @@
+query all($a: string){
+  all(func: eq(company, $a)) {
+    uid
+    lastName
+    firstName
+    company
+    title
+    city
+    friends {
+      uid
+      lastName
+      firstName
+      company
+      title
+      city
+    }
+  }
+}

@@ -1,7 +1,8 @@
-import java.io.Serializable;
 import java.util.List;
 
-public interface DGraphVertex extends Serializable {
-    public String getUid();
-    public List<? extends DGraphVertex> getEdges(String edgeType);
+public interface DGraphVertex {
+
+    String getUid();
+    List<? extends DGraphVertex> getEdges(String edgeType);
+
 }
