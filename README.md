@@ -1,7 +1,5 @@
 # Spark-DGraph Connector
-This is a proof-of-concept of data exchange between the [Apache Spark](http://spark.apache.org/) Dataset API and [DGraph](https://dgraph.io/).
-
-Currently only reading data from a DGraph query into a Spark Dataset is tested, further work should include writing from a Spark Dataset into DGraph as well as integration with Spark's graph API [GraphX](http://spark.apache.org/graphx/).
+This is a proof-of-concept of data exchange between the [Apache Spark](http://spark.apache.org/) [GraphX API](https://spark.apache.org/graphx/) and [DGraph](https://dgraph.io/).
 
 ## Dependencies
 
